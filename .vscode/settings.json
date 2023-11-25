@@ -1,0 +1,18 @@
+{
+    "rust-analyzer.check.allTargets": false,
+    "rust-analyzer.cargo.target": "xtensa-esp32s3-none-elf",
+    "terminal.integrated.env.osx": {
+        "PATH": "/Users/chenxu/.azurelogicapps/dependencies/DotNetSDK:${env:PATH}"
+    },
+    "omnisharp.dotNetCliPaths": [
+        "/Users/chenxu/.azurelogicapps/dependencies/DotNetSDK"
+    ],
+    "cSpell.words": [
+        "heapless",
+        "iface",
+        "LOGLEVEL",
+        "smoltcp",
+        "TIMG",
+        "Uninit"
+    ]
+}
