@@ -8,11 +8,15 @@
         "/Users/chenxu/.azurelogicapps/dependencies/DotNetSDK"
     ],
     "cSpell.words": [
+        "dhcpv",
         "heapless",
         "iface",
         "LOGLEVEL",
+        "riscv",
         "smoltcp",
+        "systimer",
         "TIMG",
-        "Uninit"
+        "Uninit",
+        "xtensa"
     ]
 }

@@ -15,6 +15,7 @@ use esp32s3_hal as hal;
 use hal::clock::ClockControl;
 use hal::Rng;
 use hal::{embassy, peripherals::Peripherals, prelude::*, timer::TimerGroup};
+use log::{info, error};
 use static_cell::make_static;
 
 const SSID: &str = env!("SSID");
@@ -22,7 +23,6 @@ const PASSWORD: &str = env!("PASSWORD");
 
 #[main]
 async fn main(spawner: Spawner) {
-    #[cfg(feature = "log")]
     esp_println::logger::init_logger(log::LevelFilter::Info);
 
     let peripherals = Peripherals::take();
@@ -63,7 +63,7 @@ async fn main(spawner: Spawner) {
     ));
 
     spawner.spawn(connection(controller)).ok();
-    spawner.spawn(net_task(&stack)).ok();
+    spawner.spawn(net_task(stack)).ok();
 
     let mut rx_buffer = [0; 4096];
     let mut tx_buffer = [0; 4096];
@@ -75,10 +75,10 @@ async fn main(spawner: Spawner) {
         Timer::after(Duration::from_millis(500)).await;
     }
 
-    println!("Waiting to get IP address...");
+    info!("Waiting to get IP address...");
     loop {
         if let Some(config) = stack.config_v4() {
-            println!("Got IP: {}", config.address);
+            info!("Got IP: {}", config.address);
             break;
         }
         Timer::after(Duration::from_millis(500)).await;
@@ -87,18 +87,18 @@ async fn main(spawner: Spawner) {
     loop {
         Timer::after(Duration::from_millis(1_000)).await;
 
-        let mut socket = TcpSocket::new(&stack, &mut rx_buffer, &mut tx_buffer);
+        let mut socket = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
 
         socket.set_timeout(Some(embassy_time::Duration::from_secs(10)));
 
         let remote_endpoint = (Ipv4Address::new(142, 250, 185, 115), 80);
-        println!("connecting...");
+        info!("connecting...");
         let r = socket.connect(remote_endpoint).await;
         if let Err(e) = r {
-            println!("connect error: {:?}", e);
+            error!("connect error: {:?}", e);
             continue;
         }
-        println!("connected!");
+        info!("connected!");
         let mut buf = [0; 1024];
         loop {
             use embedded_io_async::Write;
@@ -106,17 +106,17 @@ async fn main(spawner: Spawner) {
                 .write_all(b"GET / HTTP/1.0\r\nHost: www.mobile-j.de\r\n\r\n")
                 .await;
             if let Err(e) = r {
-                println!("write error: {:?}", e);
+                error!("write error: {:?}", e);
                 break;
             }
             let n = match socket.read(&mut buf).await {
                 Ok(0) => {
-                    println!("read EOF");
+                    info!("read EOF");
                     break;
                 }
                 Ok(n) => n,
                 Err(e) => {
-                    println!("read error: {:?}", e);
+                    info!("read error: {:?}", e);
                     break;
                 }
             };
@@ -128,16 +128,13 @@ async fn main(spawner: Spawner) {
 
 #[embassy_executor::task]
 async fn connection(mut controller: WifiController<'static>) {
-    println!("start connection task");
-    println!("Device capabilities: {:?}", controller.get_capabilities());
+    info!("start connection task");
+    info!("Device capabilities: {:?}", controller.get_capabilities());
     loop {
-        match esp_wifi::wifi::get_wifi_state() {
-            WifiState::StaConnected => {
-                // wait until we're no longer connected
-                controller.wait_for_event(WifiEvent::StaDisconnected).await;
-                Timer::after(Duration::from_millis(5000)).await
-            }
-            _ => {}
+        if let WifiState::StaConnected = esp_wifi::wifi::get_wifi_state() {
+            // wait until we're no longer connected
+            controller.wait_for_event(WifiEvent::StaDisconnected).await;
+            Timer::after(Duration::from_millis(5000)).await
         }
         if !matches!(controller.is_started(), Ok(true)) {
             let client_config = Configuration::Client(ClientConfiguration {
@@ -146,16 +143,16 @@ async fn connection(mut controller: WifiController<'static>) {
                 ..Default::default()
             });
             controller.set_configuration(&client_config).unwrap();
-            println!("Starting wifi");
+            info!("Starting wifi");
             controller.start().await.unwrap();
-            println!("Wifi started!");
+            info!("Wifi started!");
         }
-        println!("About to connect...");
+        info!("About to connect...");
 
         match controller.connect().await {
-            Ok(_) => println!("Wifi connected!"),
+            Ok(_) => info!("Wifi connected!"),
             Err(e) => {
-                println!("Failed to connect to wifi: {e:?}");
+                info!("Failed to connect to wifi: {e:?}");
                 Timer::after(Duration::from_millis(5000)).await
             }
         }
