@@ -213,11 +213,10 @@ dependencies = [
 
 [[package]]
 name = "embassy-executor"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f787006731ba148b3f732838c51289fbfb379446521e344d4b925a521692b118"
+checksum = "ac5b3658a8ecdcddf6d3fe0967fe0843d407071e0e32aa77ed03b60c66fbecf2"
 dependencies = [
- "atomic-polyfill 1.0.3",
  "critical-section",
  "embassy-macros",
  "embassy-time",
@@ -555,7 +554,7 @@ dependencies = [
 [[package]]
 name = "esp-wifi"
 version = "0.1.0"
-source = "git+https://github.com/esp-rs/esp-wifi/?rev=0db7a70#0db7a7063633e5fd2f195bec4799a41474afecb7"
+source = "git+https://github.com/esp-rs/esp-wifi/?rev=a38b3ca#a38b3caad1c85b8479b4dfe80a47174d36948066"
 dependencies = [
  "atomic-polyfill 1.0.3",
  "atomic_enum",
@@ -589,7 +588,7 @@ dependencies = [
 [[package]]
 name = "esp-wifi-sys"
 version = "0.1.0"
-source = "git+https://github.com/esp-rs/esp-wifi/?rev=0db7a70#0db7a7063633e5fd2f195bec4799a41474afecb7"
+source = "git+https://github.com/esp-rs/esp-wifi/?rev=a38b3ca#a38b3caad1c85b8479b4dfe80a47174d36948066"
 dependencies = [
  "anyhow",
 ]
@@ -878,9 +877,9 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.14.2"
+version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f93e7192158dbcda357bdec5fb5788eebf8bbac027f3f33e719d29135ae84156"
+checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
 
 [[package]]
 name = "heapless"
@@ -1107,9 +1106,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.69"
+version = "1.0.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "134c189feb4956b20f6f547d2cf727d4c0fe06722b20a0eec87ed445a97f92da"
+checksum = "39278fbbf5fb4f646ce651690877f89d1c5811a3d4acb27700c1cb3cdb78fd3b"
 dependencies = [
  "unicode-ident",
 ]
