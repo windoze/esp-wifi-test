@@ -6,9 +6,12 @@ use embassy_executor::Spawner;
 use embassy_net::tcp::TcpSocket;
 use embassy_net::{Config, Ipv4Address, Stack, StackResources};
 use embassy_time::{Duration, Timer};
+use embedded_io_async::Read;
 use embedded_svc::wifi::{ClientConfiguration, Configuration, Wifi};
 use esp_backtrace as _;
-use esp_println::println;
+use esp_mbedtls::{Mode, TlsVersion, Certificates, X509};
+use esp_mbedtls::asynch::Session;
+use esp_println::{println, print};
 use esp_wifi::wifi::{WifiController, WifiDevice, WifiEvent, WifiStaDevice, WifiState};
 use esp_wifi::{initialize, EspWifiInitFor};
 use esp32s3_hal as hal;
@@ -91,7 +94,7 @@ async fn main(spawner: Spawner) {
 
         socket.set_timeout(Some(embassy_time::Duration::from_secs(10)));
 
-        let remote_endpoint = (Ipv4Address::new(142, 250, 185, 115), 80);
+        let remote_endpoint = (Ipv4Address::new(192, 168, 2, 21), 443);
         info!("connecting...");
         let r = socket.connect(remote_endpoint).await;
         if let Err(e) = r {
@@ -99,28 +102,51 @@ async fn main(spawner: Spawner) {
             continue;
         }
         info!("connected!");
+
+        let tls: Session<_, 4096> = Session::new(
+            &mut socket,
+            "nas.0d0a.com",
+            Mode::Client,
+            TlsVersion::Tls1_3, // DevSkim: ignore DS440000
+            Certificates {
+                ca_chain: X509::pem(
+                    concat!(include_str!("../certs/ca-cert.pem"), "\0").as_bytes(),
+                )
+                .ok(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    
+        println!("Start tls connect");
+        let mut tls = tls.connect().await.unwrap();    
+        println!("connected!");
+        
         let mut buf = [0; 1024];
         loop {
             use embedded_io_async::Write;
-            let r = socket
-                .write_all(b"GET / HTTP/1.0\r\nHost: www.mobile-j.de\r\n\r\n")
+            let r = tls
+                .write_all(b"GET /ui/ HTTP/1.0\r\nHost: nas.0d0a.com\r\n\r\n")
                 .await;
             if let Err(e) = r {
                 error!("write error: {:?}", e);
                 break;
             }
-            let n = match socket.read(&mut buf).await {
-                Ok(0) => {
-                    info!("read EOF");
-                    break;
-                }
-                Ok(n) => n,
-                Err(e) => {
-                    info!("read error: {:?}", e);
-                    break;
-                }
-            };
-            println!("{}", core::str::from_utf8(&buf[..n]).unwrap());
+            loop {
+                // It stalls here if the server doesn't disconnect, some servers do even if we asked for HTTP/1.0
+                let n = match tls.read(&mut buf).await {
+                    Ok(n) => n,
+                    Err(esp_mbedtls::TlsError::Eof) => {
+                        break;
+                    }
+                    Err(e) => {
+                        println!("read error: {:?}", e);
+                        break;
+                    }
+                };
+                print!("{}", core::str::from_utf8(&buf[..n]).unwrap());
+            }
+            println!();
         }
         Timer::after(Duration::from_millis(3000)).await;
     }
